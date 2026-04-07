@@ -1,0 +1,239 @@
+---
+format:
+  pdf:
+    pdf-engine: pdflatex
+    toc: false
+header-includes:
+  - \usepackage{enumitem}
+  - \usepackage{multirow}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage[top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry}
+  - \setlength{\parindent}{1.5em}
+execute: 
+  echo: true
+  warning: false
+  error: true
+knitr:
+  opts_chunk: 
+    dev: "pdf"
+---
+```{r, eval=FALSE, echo=FALSE, message=FALSE}
+#AVISO: LEMBRAR DE COLOCAR A IMAGEM UFPA_LOGO.PNG DENTRO DO DIRETORIO
+```
+
+```{=tex}
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{center}
+
+\includegraphics[width=0.15\textwidth]{UFPA_LOGO.png}\par\vspace{1cm} 
+
+{\large\textbf{UNIVERSIDADE FEDERAL DO PARÁ}\\
+INSTITUTO DE CIÊNCIAS EXATAS E NATURAIS\\
+FACULDADE DE ESTATÍSTICA}\par\vspace{4cm}
+
+{\LARGE\bfseries Análise Multivariada II: Análise exploratória ao banco de dados de crânios egípcios}\par\vspace{5cm}
+
+{\Large Rodrigo Marreiros Tavares Graim}\par\vspace{3cm}
+
+{\large 2026\\Belém}\par
+
+\end{center}
+\end{titlepage}
+``` 
+
+# Apresentação
+
+Este trabalho apresenta uma análise estatística multivariada baseada nos dados clássicos de Thomson e Randall-Maciver (1905) sugeridos pelo livro "Métodos Estatísticos Multivariados: Uma Introdução". O objetivo é utilizar as medidas físicas de crânios masculinos para investigar mudanças morfológicas em populações que viveram no Alto Egito ao longo de aproximadamente 3.000 anos. O trabalho foi realizado utilizando o RStudio para a formatação do arquivo e análise de dados.
+
+# Introdução ao exemplo
+
+Exemplo 1.2: Crânios egípcios 
+
+Considere os dados mostrados na Tabela 1.2 para medidas feitas em crânios masculinos da área de Tebas, no Egito. Há cinco amostras de 30 crânios cada uma do período pré-dinástico primitivo (cerca de 4000 a.C.), do período pré-dinástico antigo (cerca de 3300 a.C.), das 12a e 13a dinastias (cerca de 1850 a.C.), do período Ptolemaico (cerca de 200 a.C.) e do período Romano (cerca de 150 d.C.). Quatro medidas são apresentadas para cada crânio, como ilustrado na Figura 1.1. Para este exemplo, algumas questões interessantes são:
+
+- 1. Como estão relacionadas as quatro medidas? 
+- 2. Existem diferenças estatisticamente significantes nas médias amostrais das variáveis, e, se existem, essas diferenças refletem mudanças gra-duais ao longo do tempo na forma e no tamanho dos crânios?
+- 3. Existem diferenças significantes nos desvios padrão amostrais para as variáveis, e, se existem, essas diferenças refletem mudanças graduais ao longo do tempo na quantidade de variação?
+- 4. É possível construir uma função das quatro variáveis que, em algum sentido, descreva as mudanças ao longo do tempo?
+
+
+![Medidas das variáveis dos crânios egípcios masculinos](cranio_var.png)
+
+- x1 = Largura máxima
+- x2 = Altura basilbregamática
+- x3 = Comprimento basialveolar
+- x4 = Altura nasal
+
+# Organizando os dados
+
+```{r}
+# Função auxiliar para estruturar cada grupo de 30 crânios
+gerar_grupo <- function(vetor_dados, nome_periodo) {
+  df <- as.data.frame(matrix(vetor_dados, ncol = 4, byrow = TRUE))
+  colnames(df) <- c("X1", "X2", "X3", "X4")
+  df$periodo <- nome_periodo
+  return(df)
+}
+
+# 1. Pré-dinástico primitivo 
+dados_p1 <- c(
+  131,138,89,49, 125,131,92,48, 131,132,99,50, 119,132,96,44, 136,143,100,54,
+  138,137,89,56, 139,130,108,48, 125,136,93,48, 131,134,102,51, 134,134,99,51,
+  129,138,95,50, 134,121,95,53, 126,129,109,51, 132,136,100,50, 141,140,100,51,
+  131,134,97,54, 135,137,103,50, 132,133,93,53, 139,136,96,50, 132,131,101,49,
+  126,133,102,51, 135,135,103,47, 134,124,93,53, 128,134,103,50, 130,130,104,49,
+  138,135,100,55, 128,132,93,53, 127,129,106,48, 131,136,114,54, 124,138,101,46
+)
+
+# 2. Pré-dinástico antigo 
+dados_p2 <- c(
+  124,138,101,48, 133,134,97,48, 138,134,98,45, 148,129,104,51, 126,124,95,45,
+  135,136,98,52, 132,145,100,54, 133,130,102,48, 131,134,96,50, 133,125,94,46,
+  133,136,103,53, 131,139,98,51, 131,136,99,56, 138,134,98,49, 130,136,104,53,
+  131,128,98,45, 138,129,107,53, 123,131,101,51, 130,129,105,47, 134,130,93,54,
+  137,136,106,49, 126,131,100,48, 135,136,97,52, 129,126,91,50, 134,139,101,49,
+  131,134,90,53, 132,130,104,50, 130,132,93,52, 135,132,98,54, 130,128,101,51
+)
+
+# 3. 12ª e 13ª dinastias 
+dados_p3 <- c(
+  137,141,96,52, 129,133,93,47, 132,138,87,48, 130,134,106,50, 134,134,96,45,
+  140,133,98,50, 138,138,95,47, 136,145,99,55, 136,131,92,46, 126,136,95,56,
+  137,129,100,53, 137,139,97,50, 136,126,101,50, 137,133,90,49, 129,142,104,47,
+  135,138,102,55, 129,135,92,50, 134,125,90,60, 138,134,96,51, 136,135,94,53,
+  132,130,91,52, 133,131,100,50, 138,137,94,51, 130,127,99,45, 136,133,91,49,
+  134,123,95,52, 136,137,101,54, 133,131,96,49, 138,133,100,55, 138,133,91,46
+)
+
+# 4. Período ptolemaico 
+dados_p4 <- c(
+  137,134,107,54, 141,128,95,53, 141,130,87,49, 135,131,99,51, 133,120,91,46,
+  131,135,90,50, 140,137,94,60, 139,130,90,48, 140,134,90,51, 138,140,100,52,
+  132,133,90,53, 134,134,97,54, 135,135,99,50, 133,136,95,52, 136,130,99,55,
+  134,137,93,52, 131,141,99,55, 129,135,95,47, 136,128,93,54, 131,125,88,48,
+  139,130,94,53, 144,124,86,50, 141,131,97,53, 130,131,98,53, 133,128,92,51,
+  138,126,97,54, 131,142,95,53, 136,138,94,55, 132,136,92,52, 135,130,100,51
+)
+
+# 5. Período romano 
+dados_p5 <- c(
+  137,123,91,50, 136,131,95,49, 128,126,91,57, 130,134,92,52, 138,127,86,47,
+  126,138,101,52, 136,138,97,58, 126,126,92,45, 132,132,99,55, 139,135,92,54,
+  143,120,95,51, 141,136,101,54, 135,135,95,56, 137,134,93,53, 142,135,96,52,
+  139,134,95,47, 138,125,99,51, 137,135,96,54, 133,125,92,50, 145,129,89,47,
+  138,136,92,46, 131,129,97,44, 143,126,88,54, 134,124,91,55, 132,127,97,52,
+  137,125,85,57, 129,128,81,52, 140,135,103,48, 147,129,87,48, 136,133,97,51
+)
+
+# Criando o data frame completo 
+cranios_egipcios <- rbind(
+  gerar_grupo(dados_p1, "Pre-dinastico primitivo"),
+  gerar_grupo(dados_p2, "Pre-dinastico antigo"),
+  gerar_grupo(dados_p3, "12 e 13 dinastias"),
+  gerar_grupo(dados_p4, "Periodo ptolemaico"),
+  gerar_grupo(dados_p5, "Periodo romano")
+)
+
+# Transformando a coluna periodo em fator 
+cranios_egipcios$periodo <- factor(cranios_egipcios$periodo, 
+                                   levels = c("Pre-dinastico primitivo", 
+                                              "Pre-dinastico antigo", 
+                                              "12 e 13 dinastias", 
+                                              "Periodo ptolemaico", 
+                                              "Periodo romano"))
+
+cranios_egipcios$cranio <- rep(seq(1:30),5)
+
+variaveis <- cranios_egipcios[,1:4]
+```
+
+# Matriz de Correlação
+
+A partir da análise da matriz de correlação, podemos observar que as variáveis apresentam uma correlação bem baixa, sugerindo que nem sempre o tamanho do crânio  define totalmente a proporção das características.
+
+```{r}
+cor(cranios_egipcios[,1:4])
+```
+
+# Medindo as médias por período
+
+```{r}
+dados_pdp <- cranios_egipcios[cranios_egipcios$periodo=="Pre-dinastico primitivo",1:4]
+  
+dados_pda <- cranios_egipcios[cranios_egipcios$periodo=="Pre-dinastico antigo",1:4]
+
+dados_din <- cranios_egipcios[cranios_egipcios$periodo=="12 e 13 dinastias",1:4]
+
+dados_pp <- cranios_egipcios[cranios_egipcios$periodo=="Periodo ptolemaico",1:4]
+
+dados_pr <- cranios_egipcios[cranios_egipcios$periodo=="Periodo romano",1:4]
+
+colMeans(dados_pdp) # PRE-DINASTICO PRIMITIVO
+colMeans(dados_pda) # PRE-DINASTICO ANTIGO
+colMeans(dados_din) # DINASTIAS
+colMeans(dados_pp)  # PERIODO PTOLEMAICO
+colMeans(dados_pr)  # PERIODO ROMANO
+
+```
+
+Pode-se observar que a média das variáveis X1 (Largura máxima) e X4 (Altura nasal) aumentaram progressivamente com o passar do tempo, enquanto que a variável X3 (Comprimento basialveolar) diminuiu progressivamente. Além disso, a variável X2 (Altura basilbregamática) apresentou oscilações interessantes ao decorrer dos períodos, não sendo possível identificar um padrão à primeira análise. Com isso, concluí-se que há realmente uma mudança temporal que afetou o tamanho e proporção do formato do crânio 
+
+# Medindo os desvios por período
+
+```{r}
+sapply(dados_pdp, sd) # PRE-DINASTICO PRIMITIVO
+sapply(dados_pda, sd) # PRE-DINASTICO ANTIGO
+sapply(dados_din, sd) # DINASTIAS
+sapply(dados_pp, sd)  # PERIODO PTOLEMAICO
+sapply(dados_pr, sd)  # PERIODO ROMANO
+
+sapply(variaveis, sd) # GERAL
+```
+
+Apesar de não significativas, os desvios padrões amostrais refletem pequenas mudanças graduais ao longo do tempo na quantidade de variação.
+
+# M de Box
+
+$$\begin{cases} 
+H_0: \Sigma_1 = \Sigma_2 = \dots = \Sigma_5 & \text{(As matrizes de covariância são iguais)} \\
+H_1: \exists \, \Sigma_i \neq \Sigma_j & \text{(Pelo menos uma matriz é diferente)} 
+\end{cases}$$
+
+```{r}
+library(biotools)
+
+# O teste exige as variáveis numéricas e o fator de agrupamento
+resultado_mbox <- boxM(variaveis, cranios_egipcios$periodo)
+
+resultado_mbox
+```
+
+Tendo em vista as análises do Teste M de Box, como pvalue > 0.05 não se pode rejeitar a hipótese nula. Logo, as matrizez de covariância são iguais, permitindo dizer que as características dos crânios egípcios não mudaram, estatísticamente, com o passar dos anos, ao nível de significância de 5%.
+
+# Modelo dos Crânios
+
+```{r}
+library(MASS)
+#analise linear discriminante
+modelo_lda <- lda(periodo ~ X1 + X2 + X3 + X4, data = cranios_egipcios)
+
+modelo_lda
+```
+
+A partir da analise linear discriminante, fica claro que o primeiro discriminante linear explica aproximadamente 88% dos dados. A partir da sua análise individual, observa-se o comportamento das variáveis no LD1, onde ambos X1 e X3 apresentaram pesos expressantes, em que, X1 apresentou um peso positivo  e X3 negativo. Para o modelo, isso indica que o aumento da largura do crânio ($X_1$) acontece simultaneamente com diminuição do comprimento basialveolar ($X_3$) ao decorrer do período histórico observado.
+
+# Referências
+
+MANLY, Bryan F J.; ALBERTO, Jorge A N. Métodos estatísticos multivariados: uma introdução. 4. ed. Porto Alegre: Bookman, 2019. E-book. p.9. ISBN 9788582604991. Disponível em: https://app.minhabiblioteca.com.br/reader/books/9788582604991/. Acesso em: 30 mar. 2026.
+
+
+THOMSON, Arthur; RANDALL-MACIVER, David. The ancient races of the Thebaid: being an anthropometrical study of the inhabitants of Upper Egypt from the earliest prehistoric times to the Mohammedan conquest, based upon the examination of over 1,500 crania. Oxford: Clarendon Press, 1905.
+
+# Links pertinentes
+
+- Link para o primeiro cap do livro de [Métodos Estatísticos Multivariados](https://api.metabooks.com/api/v1/asset/mmo/file/e603315aea4743ee812cdbf2e5b8fd76?access_token=13a46dfd-5120-4c7b-ab97-24d073db9777)
+- Link para o livro original (cranios): [The ancient races of the Thebaid](https://babel.hathitrust.org/cgi/pt?id=hvd.32044043435486&seq=181)
+- Link para o Rpubs de testes multivariados (pardal): [Homecadasticidade em dados multivariados](https://rpubs.com/melinatarituba/356716)
+- Link para o artigo dos cães (pdf no diretorio): [An analysis of prehistoric canid remains from Thailand](https://www.sciencedirect.com/science/article/pii/S0305440380800173)
